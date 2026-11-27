@@ -1,0 +1,37 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() { return request.auth != null; }
+    function adminUser() {
+      return signedIn()
+        && exists(/databases/$(database)/documents/users/$(request.auth.uid))
+        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+    match /contents/{id} {
+      // Query with where('status', '==', 'approved') for ordinary public feeds.
+      allow get, list: if resource.data.status == 'approved' || adminUser();
+      allow create, update, delete: if false; // Cloud Functions/Admin SDK only
+    }
+    match /comments/{id} {
+      // Query also requires an approved-status filter.
+      allow get, list: if resource.data.status == 'approved' || adminUser();
+      allow create, update, delete: if false;
+    }
+    match /votes/{id} {
+      // Only a user can inspect their own vote. Callable function writes atomically.
+      allow get: if signedIn() && id.matches('^.+_' + request.auth.uid + '$');
+      allow list, create, update, delete: if false;
+    }
+    match /users/{uid} {
+      // Admin roles must be assigned via trusted Admin SDK, never a browser.
+      allow get: if signedIn() && request.auth.uid == uid;
+      allow list, create, update, delete: if false;
+    }
+    match /metadata/{id} {
+      allow read: if true;
+      allow write: if false;
+    }
+    match /rateLimits/{id} { allow read, write: if false; }
+    match /reports/{id} { allow read, write: if false; }
+  }
+}

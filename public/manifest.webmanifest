@@ -1,0 +1,10 @@
+{
+  "name": "Good Company",
+  "short_name": "Good Company",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#faf9f6",
+  "theme_color": "#1e302b",
+  "icons": [{ "src": "favicon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }]
+}
